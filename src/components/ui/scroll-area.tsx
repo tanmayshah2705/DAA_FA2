@@ -13,7 +13,7 @@ function ScrollArea({
   return (
     <ScrollAreaPrimitive.Root
       data-slot="scroll-area"
-      className={cn("relative max-h-96", className)}
+      className={cn("relative max-h-96 overflow-auto", className)}
       {...props}
     >
       <ScrollAreaPrimitive.Viewport
