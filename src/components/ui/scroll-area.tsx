@@ -4,21 +4,29 @@ import * as React from "react";
 import * as ScrollAreaPrimitive from "@radix-ui/react-scroll-area@1.2.3";
 import { cn } from "./utils";
 
-// ✅ This version ensures that when rendered, the element has
-// style="overflow: auto;" visible in DevTools.
-
 function ScrollArea({
   className,
   children,
   ...props
 }: React.ComponentProps<typeof ScrollAreaPrimitive.Root>) {
+  const containerRef = React.useRef<HTMLDivElement | null>(null);
+
+  // ✅ Auto-scroll to bottom whenever children change
+  React.useEffect(() => {
+    const el = containerRef.current;
+    if (el) {
+      // Smoothly scroll to bottom
+      el.scrollTop = el.scrollHeight;
+    }
+  }, [children]);
+
   return (
     <ScrollAreaPrimitive.Root
       data-slot="scroll-area"
       dir="ltr"
-      // 👇 add overflow-auto class for safety + inline style
       className={cn("relative max-h-96 flex-1 p-4", className)}
-      style={{ overflow: "auto" }} // ✅ this makes it appear in the element’s "style" attribute
+      style={{ overflow: "auto" }} // ✅ inline overflow visible
+      ref={containerRef} // ✅ reference for scrolling
       {...props}
     >
       <ScrollAreaPrimitive.Viewport
@@ -27,7 +35,6 @@ function ScrollArea({
       >
         {children}
       </ScrollAreaPrimitive.Viewport>
-
       <ScrollBar />
       <ScrollAreaPrimitive.Corner />
     </ScrollAreaPrimitive.Root>
