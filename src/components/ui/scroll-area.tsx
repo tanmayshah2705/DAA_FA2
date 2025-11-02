@@ -7,34 +7,86 @@ import { cn } from "./utils";
 function ScrollArea({
   className,
   children,
+  scrollBehavior = "smooth",
   ...props
-}: React.ComponentProps<typeof ScrollAreaPrimitive.Root>) {
-  const containerRef = React.useRef<HTMLDivElement | null>(null);
+}: React.ComponentProps<typeof ScrollAreaPrimitive.Root> & {
+  /** "smooth" | "auto" */
+  scrollBehavior?: "smooth" | "auto";
+}) {
+  // ref to the actual scroll container (Radix Viewport)
+  const viewportRef = React.useRef<HTMLDivElement | null>(null);
 
-  // ✅ Auto-scroll to bottom whenever children change
+  // helper to scroll the last element into view
+  const scrollLastIntoView = React.useCallback(
+    (behavior: ScrollBehavior = "smooth") => {
+      const viewport = viewportRef.current;
+      if (!viewport) return;
+
+      const last = viewport.lastElementChild;
+      if (last) {
+        // If the last child itself is not focusable/visible, use scrollIntoView on it.
+        // block: "nearest" prevents excessive jump; change to "end" if you want bottom-aligned.
+        try {
+          (last as HTMLElement).scrollIntoView({
+            behavior,
+            block: "nearest",
+            inline: "nearest",
+          });
+        } catch {
+          // fallback to setting scrollTop
+          viewport.scrollTop = viewport.scrollHeight;
+        }
+      } else {
+        // fallback: no children — just scroll to bottom
+        viewport.scrollTop = viewport.scrollHeight;
+      }
+    },
+    [],
+  );
+
+  // Observe DOM changes inside the viewport (covers dynamic insertions)
   React.useEffect(() => {
-    const el = containerRef.current;
-    if (el) {
-      // Smoothly scroll to bottom
-      el.scrollTop = el.scrollHeight;
-    }
-  }, [children]);
+    const viewport = viewportRef.current;
+    if (!viewport) return;
+
+    const mo = new MutationObserver((mutations) => {
+      // If nodes were added, scroll the last added into view
+      for (const m of mutations) {
+        if (m.addedNodes && m.addedNodes.length > 0) {
+          // small timeout to allow layout to settle
+          requestAnimationFrame(() => scrollLastIntoView(scrollBehavior));
+          break;
+        }
+      }
+    });
+
+    mo.observe(viewport, { childList: true, subtree: false });
+    return () => mo.disconnect();
+  }, [scrollLastIntoView, scrollBehavior]);
+
+  // Also run when React children change (covers React-controlled updates)
+  React.useEffect(() => {
+    // schedule after paint/layout
+    requestAnimationFrame(() => scrollLastIntoView(scrollBehavior));
+  }, [children, scrollLastIntoView, scrollBehavior]);
 
   return (
     <ScrollAreaPrimitive.Root
       data-slot="scroll-area"
       dir="ltr"
       className={cn("relative max-h-96 flex-1 p-4", className)}
-      style={{ overflow: "auto" }} // ✅ inline overflow visible
-      ref={containerRef} // ✅ reference for scrolling
+      style={{ overflow: "auto" }} // inline style visible in DevTools
       {...props}
     >
       <ScrollAreaPrimitive.Viewport
+        // IMPORTANT: attach ref to Viewport — this is the real scroll container
+        ref={viewportRef}
         data-slot="scroll-area-viewport"
         className="focus-visible:ring-ring/50 size-full rounded-[inherit] transition-[color,box-shadow] outline-none focus-visible:ring-[3px] focus-visible:outline-1"
       >
         {children}
       </ScrollAreaPrimitive.Viewport>
+
       <ScrollBar />
       <ScrollAreaPrimitive.Corner />
     </ScrollAreaPrimitive.Root>
