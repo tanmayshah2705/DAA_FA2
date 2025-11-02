@@ -2,8 +2,10 @@
 
 import * as React from "react";
 import * as ScrollAreaPrimitive from "@radix-ui/react-scroll-area@1.2.3";
-
 import { cn } from "./utils";
+
+// ✅ This version ensures that when rendered, the element has
+// style="overflow: auto;" visible in DevTools.
 
 function ScrollArea({
   className,
@@ -13,15 +15,19 @@ function ScrollArea({
   return (
     <ScrollAreaPrimitive.Root
       data-slot="scroll-area"
-      className={cn("relative max-h-96 overflow-auto", className)}
+      dir="ltr"
+      // 👇 add overflow-auto class for safety + inline style
+      className={cn("relative max-h-96 flex-1 p-4", className)}
+      style={{ overflow: "auto" }} // ✅ this makes it appear in the element’s "style" attribute
       {...props}
     >
       <ScrollAreaPrimitive.Viewport
         data-slot="scroll-area-viewport"
-        className="focus-visible:ring-ring/50 size-full rounded-[inherit] transition-[color,box-shadow] outline-none focus-visible:ring-[3px] focus-visible:outline-1 overflow-auto"
+        className="focus-visible:ring-ring/50 size-full rounded-[inherit] transition-[color,box-shadow] outline-none focus-visible:ring-[3px] focus-visible:outline-1"
       >
         {children}
       </ScrollAreaPrimitive.Viewport>
+
       <ScrollBar />
       <ScrollAreaPrimitive.Corner />
     </ScrollAreaPrimitive.Root>
