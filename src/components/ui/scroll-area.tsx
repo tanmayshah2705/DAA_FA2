@@ -9,23 +9,16 @@ function ScrollArea({
   children,
   ...props
 }: React.ComponentProps<typeof ScrollAreaPrimitive.Root>) {
-  // ✅ ref for the actual scrollable viewport
+  // Ref for the actual scrollable viewport (the inner container)
   const viewportRef = React.useRef<HTMLDivElement | null>(null);
 
-  // ✅ scroll to bottom when children change or new elements added
+  // ✅ Scroll to bottom when new content (children) is added
   React.useEffect(() => {
     const viewport = viewportRef.current;
     if (!viewport) return;
 
-    // Scroll to the last child if it exists
-    const lastChild = viewport.lastElementChild;
-    if (lastChild) {
-      // Smooth scroll so it looks natural
-      (lastChild as HTMLElement).scrollIntoView({
-        behavior: "smooth",
-        block: "end",
-      });
-    }
+    // Scroll only inside this container, not the page
+    viewport.scrollTop = viewport.scrollHeight;
   }, [children]);
 
   return (
@@ -33,11 +26,11 @@ function ScrollArea({
       data-slot="scroll-area"
       dir="ltr"
       className={cn("relative max-h-96 flex-1 p-4", className)}
-      style={{ overflow: "auto" }} // visible in DevTools
+      style={{ overflow: "auto" }} // visible inline in DevTools
       {...props}
     >
       <ScrollAreaPrimitive.Viewport
-        ref={viewportRef} // 👈 ref attached here
+        ref={viewportRef} // 👈 we scroll this element only
         data-slot="scroll-area-viewport"
         className="focus-visible:ring-ring/50 size-full rounded-[inherit] transition-[color,box-shadow] outline-none focus-visible:ring-[3px] focus-visible:outline-1"
       >
